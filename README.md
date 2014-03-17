@@ -6,9 +6,7 @@ A tool for getting phone numbers of devices using Whatsapp by real time sniffing
 
 ### Note 
 
-This code has been released as a PoC, and it does not pretend to be a hacking malicious tool. That is why real time sniffing has been disabled in this first version, to prevent from script kiddies. 
-
-It is very easy to someone with basics knowledge of programming to enable this real time sniffing mode in this code. Also make sure that interface can get through the traffic that this script is expecting.
+Realtime sniffing and logfile has been added.
 
 
 ### Author
