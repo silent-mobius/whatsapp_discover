@@ -19,9 +19,16 @@ Deepak Daswani
 
 [http://deepakdaswani.es](http://deepakdaswani.es)
 
+
+### Fork
+by xtr4nge
+[@xtr4nge](http://twitter.com/xtr4nge)
+[https://github.com/xtr4nge/whatsapp_discover](https://github.com/xtr4nge/whatsapp_discover)
+
+
 ### Usage
 
-	$ ./whatsapp_discover.pl -i interface | -f pcapfile[s]
+	$ ./whatsapp_discover.pl -i interface | -f pcapfile[s] [-l logfile]
 
 ### Example
 
@@ -31,6 +38,9 @@ In the example below, the numbers have been darkened with X characters for priva
 	
 	Whatsapp Discover v1.0  --- Deepak Daswani (@dipudaswani) 2014
 	                            http://deepakdaswani.es 
+	
+	Realtime sniffer  v1.0  --- Fork by xtr4nge (@xtr4nge) 2014
+	                            https://github.com/xtr4nge/whatsapp_discover
 	
 	Parsing /home/deepak/pcapfiles/freewifi-01.cap ...
 	Got 1 number! S.O: iPhone-2.11.4-5222 Mobile number: +1202XXXXXXX
