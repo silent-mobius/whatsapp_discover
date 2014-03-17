@@ -4,6 +4,9 @@
 # Author: Deepak Daswani (@dipudaswani)
 # Website: http://deepakdaswani.es
 # Date: March, 2014
+# --------------------------------------
+# Fork by xtr4nge (@xtr4nge)
+# Website: https://github.com/xtr4nge/whatsapp_discover
 
 use Getopt::Long;
 use Net::Pcap;
@@ -12,10 +15,12 @@ use NetPacket::IP;
 use NetPacket::TCP;
 use strict;
 
-my ($pcap,$err,$dev,$help,$interface,@files);
+# Declarations of global variables
+my ($pcap,$err,$dev,$help,$interface,@files,$log);
 my $count = 0;
 my $file_count = 0;
 my $hoffset = -1;
+my $g_pcap_err = '';
 
 # Usage definition 
 
@@ -23,15 +28,17 @@ sub usage {
 
 print "Unknown option: @_\n\n" if ( @_ );
 print "\nWhatsapp Discover v1.0  --- Deepak Daswani (\@dipudaswani) 2014\n";
-print "                            http://deepakdaswani.es \n";
-print "Usage: whatsapp_discover -i interface | -f pcapfile[s]\n";
+print "                            http://deepakdaswani.es \n\n";
+print "Realtime sniffer  v1.0  --- Fork by xtr4nge (\@xtr4nge) 2014\n";
+print "                            https://github.com/xtr4nge/whatsapp_discover\n\n";
+print "Usage: whatsapp_discover -i interface | -f pcapfile[s] [-l logfile]\n";
 print "---------------------------------------------------------------\n\n\n";
 exit;
 }
 
 # Parse command line arguments 
 
-usage() if (@ARGV < 1 or ! GetOptions('help|?' => \$help, 'i=s' => \$interface, 'f=s{,}' => \@files) or defined $help);
+usage() if (@ARGV < 1 or ! GetOptions('help|?' => \$help, 'i=s' => \$interface, 'f=s{,}' => \@files, 'l=s' => \$log) or defined $help);
 
 
 
@@ -49,6 +56,8 @@ if (defined $interface && @files) {
 # Print header
 print "\nWhatsapp Discover v1.0  --- Deepak Daswani (\@dipudaswani) 2014\n";
 print "                            http://deepakdaswani.es \n\n";
+print "Realtime sniffer  v1.0  --- Fork by xtr4nge (\@xtr4nge) 2014\n";
+print "                            https://github.com/xtr4nge/whatsapp_discover\n\n";
 
 # Sniff or parse pcap file[s]
 
@@ -63,8 +72,41 @@ if (@files) {
 
 # Create pcap object from an interface (disabled in this PoC version)
 sub sniff {
-	print "\nReal time snifing was disabled in this initial version. \nSorry for the trouble\n\n";
-	exit;
+	
+	if ($pcap = Net::Pcap::open_live($interface,2000,0,1000,\$g_pcap_err))
+	{
+	
+		my $datalink;
+		$datalink = Net::Pcap::datalink($pcap);
+		# Fake a case block
+		CASE: {
+			# EN10MB capture files
+			($datalink == 1) && do {
+			$hoffset = 14;
+			last CASE;
+			};
+				
+			# Linux cooked socket capture files
+			($datalink == 113) && do {
+			$hoffset = 16;
+			last CASE;
+			};
+				
+			# DLT_IEEE802_11 capture files
+			($datalink == 105) && do {
+			$hoffset = 32;
+			last CASE;
+			}
+		}
+
+		my $filter = "tcp && (port 5222 or port 443 or port 5223)";  # Filters Whatsapp's traffic
+		my $filter_t;
+		Net::Pcap::compile( $pcap, \$filter_t, $filter, 1, 0 );
+		Net::Pcap::setfilter( $pcap, $filter_t );
+		Net::Pcap::loop($pcap, 0, \&process_pkt, '' ); # Loop to process pcap file
+		Net::Pcap::close($pcap); # Close pcap object 
+	}
+	
 }
 
 # Parse pcap files in batch. Creates pcap object from a saved file 
@@ -106,6 +148,12 @@ sub parse_file () {
 
 }
 
+sub f_probe_read80211b_func {
+	my($data, $header,$packet) = @_;
+	print "\n Got a packet: ";
+	print "\n" . unpack ('H*',$packet);
+};
+
 # Function for printing a packet. Only for debug purposes 
 sub print_pkt {
     my ($packet) = @_;   
@@ -126,6 +174,10 @@ my $i;
 # Callback function that is applied to every packet processed in the loop
 sub process_pkt {
 
+	if (length($log) != 0) {
+		open (LOGFILE, '>>' . $log);
+	}
+
 	my ($data, $header, $packet) = @_;
 	my $unpacket = unpack('H*', substr($packet, 0,1));
 	if (($hoffset == 32) && ($unpacket == 88)) {
@@ -140,9 +192,17 @@ sub process_pkt {
 		my $version = $1;
 		my $telefono = $2;
 		print "Got 1 number! S.O: $version Mobile number: +$telefono\n";
+		if (length($log) != 0) {
+			print LOGFILE "Got 1 number! S.O: $version Mobile number: +$telefono\n";
+		}
 		$count++;
+	}
+	
+	if (length($log) != 0) {
+		close (LOGFILE);
 	}
 
 }
-print "\n$file_count files parsed. $count phone numbers using Whatsapp found...\n\n";
+
+print "\n$count phone numbers using Whatsapp found...\n\n";
 # End of file 
